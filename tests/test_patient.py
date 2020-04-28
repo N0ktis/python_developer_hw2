@@ -2,7 +2,7 @@ import functools
 import os
 from datetime import datetime
 import itertools
-
+import logging
 import pytest
 
 from homework.config import GOOD_LOG_FILE, ERROR_LOG_FILE, CSV_PATH, PHONE_FORMAT, PASSPORT_TYPE, PASSPORT_FORMAT, \
@@ -39,6 +39,7 @@ def setup_module(__main__):
 
 def teardown_module(__name__):
     for file in [GOOD_LOG_FILE, ERROR_LOG_FILE, CSV_PATH]:
+        logging.shutdown()
         os.remove(file)
 
 
