@@ -218,20 +218,15 @@ class PatientCollection:
 
     def __iter__(self):
         try:
-            pnd.read_csv(self.path, sep='|', header=None, dtype=str)
+            for i in range(0, len(pnd.read_csv(self.path, sep='|', header=None, dtype=str).index)):
+                yield Patient(*pnd.read_csv(self.path, sep='|', header=None, dtype=str).iloc[i])
         except pnd.errors.EmptyDataError:
             return
-        for i in range(0, len(pnd.read_csv(self.path, sep='|', header=None, dtype=str).index)):
-            try:
-                pnd.read_csv(self.path, sep='|', header=None, dtype=str)
-            except pnd.errors.EmptyDataError:
-                return
-            yield Patient(*pnd.read_csv(self.path, sep='|', header=None, dtype=str).iloc[i])
+
 
     def limit(self, limit_val):
-        for i in range(0, limit_val):
-            try:
-                pnd.read_csv(self.path, sep='|', header=None, nrows=limit_val, dtype=str)
-            except pnd.errors.EmptyDataError:
-                return
-            yield Patient(*pnd.read_csv(self.path, sep='|', header=None, nrows=limit_val, dtype=str).iloc[i])
+        try:
+            for i in range(0, limit_val):
+                yield Patient(*pnd.read_csv(self.path, sep='|', header=None, nrows=limit_val, dtype=str).iloc[i])
+        except pnd.errors.EmptyDataError:
+            return
