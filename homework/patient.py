@@ -18,79 +18,90 @@ info_logs.setFormatter(formatter)
 logger_info.addHandler(info_logs)
 logger_error.addHandler(error_logs)
 
+PASSPORT = 'паспорт'
+INTERNATIONAL_PASS_1 = 'загранпаспорт'
+INTERNATIONAL_PASS_2 = 'заграничный паспорт'
+DRIVER_LICENSE_1 = 'водительское удостоверение'
+DRIVER_LICENSE_2 = 'водительские права'
 
-class DataCheck:
-    def _name_check(self, name):
-        if not name.isalpha():
-            logger_error.error("Name or surname contains invalid characters")
-            raise ValueError("Name or surname contains invalid characters")
-        return name.capitalize()
 
-    def _birth_check(self, born):
-        if len(born) != 10:
-            logger_error.error("Incorrect date length")
-            raise ValueError("Incorrect date length")
-        born = born[:4] + '-' + born[5:7] + '-' + born[8:]
-        for k, i in enumerate(born):
-            if i.isdigit() and (0 <= k <= 3 or k == 5 or k == 6 or k == 8 or k == 9):
-                continue
-            elif (k == 4 or k == 7) and i == '-':
-                continue
-            else:
-                logger_error.error("Date contains invalid characters")
-                raise ValueError("Date contains invalid characters")
-        if str(datetime.date.today()) >= born:
-            return born
+def name_check(name):
+    if not name.isalpha():
+        logger_error.error("Name or surname contains invalid characters")
+        raise ValueError("Name or surname contains invalid characters")
+    return name.capitalize()
+
+
+def birth_check(born):
+    if len(born) != 10:
+        logger_error.error("Incorrect date length")
+        raise ValueError("Incorrect date length")
+    born = born[:4] + '-' + born[5:7] + '-' + born[8:]
+    for k, i in enumerate(born):
+        if i.isdigit() and (0 <= k <= 3 or k == 5 or k == 6 or k == 8 or k == 9):
+            continue
+        elif (k == 4 or k == 7) and i == '-':
+            continue
         else:
-            logger_error.error("Date does not exist yet")
-            raise ValueError("Date does not exist yet")
+            logger_error.error("Date contains invalid characters")
+            raise ValueError("Date contains invalid characters")
+    if str(datetime.date.today()) >= born:
+        return born
+    else:
+        logger_error.error("Date does not exist yet")
+        raise ValueError("Date does not exist yet")
 
-    def _phone_check(self, phone):
-        phone = phone.replace('+', '')
-        phone = phone.replace('(', '')
-        phone = phone.replace(')', '')
-        phone = phone.replace('-', '')
-        phone = phone.replace(' ', '')
-        if len(phone) == 11:
-            if phone.isdigit():
-                return "+7" + phone[1:]
-            else:
-                logger_error.error("Phone number contains invalid characters")
-                raise ValueError("Phone number contains invalid characters")
+
+def phone_check(phone):
+    phone = phone.replace('+', '')
+    phone = phone.replace('(', '')
+    phone = phone.replace(')', '')
+    phone = phone.replace('-', '')
+    phone = phone.replace(' ', '')
+    if len(phone) == 11:
+        if phone.isdigit():
+            return "+7" + phone[1:]
         else:
-            logger_error.error("Incorrect phone number length")
-            raise ValueError("Incorrect phone number length")
+            logger_error.error("Phone number contains invalid characters")
+            raise ValueError("Phone number contains invalid characters")
+    else:
+        logger_error.error("Incorrect phone number length")
+        raise ValueError("Incorrect phone number length")
 
-    def _doc_check(self, doc):
-        if doc.lower() != "паспорт" and doc.lower() != "загранпаспорт" and doc.lower() != "заграничный паспорт" and \
-                doc.lower() != "водительские права" and doc.lower() != "водительское удостоверение":
-            logger_error.error("Incorrect document")
-            raise ValueError("Incorrect document")
-        return doc.lower()
 
-    def _doc_id_check(self, doc_id):
-        doc_id = doc_id.replace(' ', '')
-        doc_id = doc_id.replace('-', '')
-        doc_id = doc_id.replace('/', '')
-        doc_id = doc_id.replace('\\', '')
-        if doc_id.isdigit():
-            if len(doc_id) == 10:
-                return doc_id[:2] + ' ' + doc_id[2:4] + ' ' + doc_id[4:]
-            elif len(doc_id) == 9:
-                return doc_id[:2] + ' ' + doc_id[2:]
-            else:
-                logger_error.error("Incorrect document's number length")
-                raise ValueError("Incorrect document's number length")
+def doc_check(doc):
+    if doc.lower() != PASSPORT and doc.lower() != INTERNATIONAL_PASS_1 and doc.lower() != INTERNATIONAL_PASS_2 and \
+            doc.lower() != DRIVER_LICENSE_1 and doc.lower() != DRIVER_LICENSE_2:
+        logger_error.error("Incorrect document")
+        raise ValueError("Incorrect document")
+    return doc.lower()
+
+
+def doc_id_check(doc_id):
+    doc_id = doc_id.replace(' ', '')
+    doc_id = doc_id.replace('-', '')
+    doc_id = doc_id.replace('/', '')
+    doc_id = doc_id.replace('\\', '')
+    if doc_id.isdigit():
+        if len(doc_id) == 10:
+            return doc_id[:2] + ' ' + doc_id[2:4] + ' ' + doc_id[4:]
+        elif len(doc_id) == 9:
+            return doc_id[:2] + ' ' + doc_id[2:]
         else:
-            logger_error.error("Document number contains invalid characters")
-            raise ValueError("Document number contains invalid characters")
+            logger_error.error("Incorrect document's number length")
+            raise ValueError("Incorrect document's number length")
+    else:
+        logger_error.error("Document number contains invalid characters")
+        raise ValueError("Document number contains invalid characters")
 
 
-class DataAccess(DataCheck):
-    def __init__(self, name='атрибут', data_get=None, data_set=None, data_del=None):
+# Descriptor
+class DataAccess:
+    def __init__(self, name='атрибут', data_get=None, data_set=None, data_del=None, data_check=None):
         self.data_get = data_get
         self.data_set = data_set
         self.data_del = data_del
+        self.data_check = data_check
         self.name = name
 
     def __get__(self, obj, objtype):
@@ -100,16 +111,7 @@ class DataAccess(DataCheck):
         if type(val) != str:
             logger_error.error("Incorrect type of input data")
             raise TypeError("Incorrect type of input data")
-        if self.name == 'first_name' or self.name == 'last_name':
-            self.data_set(obj, self._name_check(val), self.name)
-        elif self.name == 'birth_date':
-            self.data_set(obj, self._birth_check(val), self.name)
-        elif self.name == 'phone':
-            self.data_set(obj, self._phone_check(val), self.name)
-        elif self.name == 'document_type':
-            self.data_set(obj, self._doc_check(val), self.name)
-        elif self.name == 'document_id':
-            self.data_set(obj, self._doc_id_check(val), self.name)
+        self.data_set(obj, self.data_check(val), self.name)
 
     def __delete__(self, obj):
         self.data_del(obj, self.name)
@@ -149,9 +151,9 @@ class Patient:
         elif key == 'document_type':
             self._document_type = value
         elif key == 'document_id':
-            if ((self._document_type == "паспорт" or self._document_type == "водительские права" or
-                 self._document_type == "водительское удостоверение") and len(value) == 12) or \
-                    ((self._document_type == "загранпаспорт" or self._document_type == "заграничный паспорт")
+            if ((self._document_type == PASSPORT or self._document_type == DRIVER_LICENSE_1 or
+                 self._document_type == DRIVER_LICENSE_2) and len(value) == 12) or \
+                    ((self._document_type == INTERNATIONAL_PASS_1 or self._document_type == INTERNATIONAL_PASS_2)
                      and len(value) == 10):
                 self._document_id = value
             else:
@@ -174,12 +176,12 @@ class Patient:
         elif key == 'document_id':
             del self._document_id
 
-    first_name = DataAccess('first_name', get_field, set_field, del_field)
-    last_name = DataAccess('last_name', get_field, set_field, del_field)
-    birth_date = DataAccess('birth_date', get_field, set_field, del_field)
-    phone = DataAccess('phone', get_field, set_field, del_field)
-    document_type = DataAccess('document_type', get_field, set_field, del_field)
-    document_id = DataAccess('document_id', get_field, set_field, del_field)
+    first_name = DataAccess('first_name', get_field, set_field, del_field, name_check)
+    last_name = DataAccess('last_name', get_field, set_field, del_field, name_check)
+    birth_date = DataAccess('birth_date', get_field, set_field, del_field, birth_check)
+    phone = DataAccess('phone', get_field, set_field, del_field, phone_check)
+    document_type = DataAccess('document_type', get_field, set_field, del_field, doc_check)
+    document_id = DataAccess('document_id', get_field, set_field, del_field, doc_id_check)
 
     def __init__(self, name, surname, born, phone, doc, doc_id):
         self.first_name = name
@@ -223,10 +225,10 @@ class PatientCollection:
         except pnd.errors.EmptyDataError:
             return
 
-
     def limit(self, limit_val):
-        try:
-            for i in range(0, limit_val):
+
+        for i in range(0, limit_val):
+            try:
                 yield Patient(*pnd.read_csv(self.path, sep='|', header=None, nrows=limit_val, dtype=str).iloc[i])
-        except pnd.errors.EmptyDataError:
-            return
+            except pnd.errors.EmptyDataError:
+                return
