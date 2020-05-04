@@ -48,6 +48,9 @@ def logger_decorator_maker(id=None):
                     logger_info.info("Field " + args[1] + " were updated")
                 elif id == 'save':
                     logger_info.info("Patient saved")
+                elif id == 'init connection':
+                    logger_info.info("Connect to DB successful")
+
             return checked_value
 
         return wrapper
@@ -234,9 +237,8 @@ class Patient:
 
 
 class PatientCollection:
-    @logger_decorator_maker()
+    @logger_decorator_maker('init connection')
     def __init__(self, user='', password='', host='', port='', dbname=''):
-        global engine
         try:
             self.session = init_connection(user, password, host, port, dbname)
         except:
@@ -246,14 +248,17 @@ class PatientCollection:
     def __iter__(self):
         try:
             for patient in self.session.query(Patient_DB):
-                yield Patient(patient.first_name,patient.last_name,patient.birth_date,patient.phone,patient.document_type,patient.document_id)
+                yield Patient(patient.first_name, patient.last_name, patient.birth_date, patient.phone,
+                              patient.document_type, patient.document_id)
         except:
+            raise
             return
 
     @logger_decorator_maker()
     def limit(self, limit_val):
         try:
             for patient in self.session.query(Patient_DB).limit(limit_val):
-                yield Patient(patient.first_name,patient.last_name,patient.birth_date,patient.phone,patient.document_type,patient.document_id)
+                yield Patient(patient.first_name, patient.last_name, patient.birth_date, patient.phone,
+                              patient.document_type, patient.document_id)
         except:
             return
