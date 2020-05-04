@@ -74,7 +74,7 @@ def birth_check(born):
             continue
         else:
             raise ValueError("Date contains invalid characters")
-    if str(datetime.date.today()) >= born:
+    if str(datetime.date.today()) >= born:  #колхозное сравнение)
         return born
     else:
         raise ValueError("Date does not exist yet")
@@ -135,7 +135,7 @@ class DataAccess:
 
     @logger_decorator_maker()
     def __set__(self, obj, val):
-        if type(val) != str:
+        if not isinstance(val,str):
             raise TypeError("Incorrect type of input data")
         self.data_set(obj, self.data_check(val), self.name)
 
@@ -238,7 +238,7 @@ class Patient:
 class PatientCollection:
     @logger_decorator_maker()
     def __init__(self, path_to_file):
-        if type(path_to_file) != str:
+        if isinstance(path_to_file,str):
             logger_error.error("Incorrect type of input path")
             raise TypeError("Incorrect type of input path")
         self.path = path_to_file
