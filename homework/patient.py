@@ -1,7 +1,7 @@
 import datetime
 import logging
-import pandas as pnd
 from functools import wraps
+from homework.db_config import init_connection, Patient_DB
 
 logger_info = logging.getLogger("patient_log_info")
 logger_info.setLevel(logging.INFO)
@@ -222,13 +222,11 @@ class Patient:
 
     @logger_decorator_maker('save')
     def save(self):
-        df = pnd.DataFrame({'first name': [self.first_name],
-                            'last name': [self.last_name],
-                            'birth date': [self.birth_date],
-                            'phone': [self.phone],
-                            'document type': [self.document_type],
-                            'document id': [self.document_id]})
-        df.to_csv('data.csv', '|', header=False, index=False, mode='a')
+        session = init_connection('postgres', '317a251', 'localhost', '5432', 'patients')
+        patient = Patient_DB(first_name=self.first_name, last_name=self.last_name, birth_date=self.birth_date,
+                             phone=self.phone, document_type=self.document_type, document_id=self.document_id)
+        session.add(patient)
+        session.commit()
 
     @staticmethod
     def create(name, surname, born, phone, doc, number):
@@ -237,26 +235,25 @@ class Patient:
 
 class PatientCollection:
     @logger_decorator_maker()
-    def __init__(self, path_to_file):
-        if type(path_to_file) != str:
-            logger_error.error("Incorrect type of input path")
-            raise TypeError("Incorrect type of input path")
-        self.path = path_to_file
+    def __init__(self, user='', password='', host='', port='', dbname=''):
+        global engine
+        try:
+            self.session = init_connection(user, password, host, port, dbname)
+        except:
+            pass
 
     @logger_decorator_maker()
     def __iter__(self):
         try:
-            for i in range(0, len(pnd.read_csv(self.path, sep='|', header=None, dtype=str).index)):
-                yield Patient(*pnd.read_csv(self.path, sep='|', header=None, dtype=str).iloc[i])
-        except IOError:
+            for patient in self.session.query(Patient_DB):
+                yield Patient(patient.first_name,patient.last_name,patient.birth_date,patient.phone,patient.document_type,patient.document_id)
+        except:
             return
 
     @logger_decorator_maker()
     def limit(self, limit_val):
-        for i in range(0, limit_val):
-            try:
-                yield Patient(*pnd.read_csv(self.path, sep='|', header=None, nrows=limit_val, dtype=str).iloc[i])
-            except IndexError:
-                return
-            except pnd.errors.EmptyDataError:
-                return
+        try:
+            for patient in self.session.query(Patient_DB).limit(limit_val):
+                yield Patient(patient.first_name,patient.last_name,patient.birth_date,patient.phone,patient.document_type,patient.document_id)
+        except:
+            return
