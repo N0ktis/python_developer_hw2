@@ -1,7 +1,7 @@
 import datetime
 import logging
 from functools import wraps
-from homework.db_config import init_connection, Patient_DB
+from homework.db_config import init_connection, Patient_DB, SQLAlchemyError, NoSuchTableError,DEFAULT_PARAMS
 
 logger_info = logging.getLogger("patient_log_info")
 logger_info.setLevel(logging.INFO)
@@ -41,6 +41,10 @@ def logger_decorator_maker(id=None):
             except AttributeError as error:
                 logger_error.error(error.args[0])
                 raise AttributeError(error.args[0])
+            except NoSuchTableError:
+                logger_error.error('The table does not exist or is not visible for the join.')
+            except SQLAlchemyError:
+                logger_error.error('Error while working with database')
             else:
                 if id == 'init':
                     logger_info.info("Patient added")
@@ -225,7 +229,7 @@ class Patient:
 
     @logger_decorator_maker('save')
     def save(self):
-        session = init_connection('postgres', '317a251', 'localhost', '5432', 'patients')
+        session = init_connection(*DEFAULT_PARAMS)
         patient = Patient_DB(first_name=self.first_name, last_name=self.last_name, birth_date=self.birth_date,
                              phone=self.phone, document_type=self.document_type, document_id=self.document_id)
         session.add(patient)
@@ -238,27 +242,20 @@ class Patient:
 
 class PatientCollection:
     @logger_decorator_maker('init connection')
-    def __init__(self, user='', password='', host='', port='', dbname=''):
-        try:
-            self.session = init_connection(user, password, host, port, dbname)
-        except:
-            pass
+    def __init__(self, user, password, host, port):
+        if isinstance(user, str) and isinstance(password, str) and isinstance(host, str) and isinstance(port, str):
+            self.session = init_connection(user, password, host, port)
+        else:
+            raise TypeError("Incorrect type of input data")
 
     @logger_decorator_maker()
     def __iter__(self):
-        try:
-            for patient in self.session.query(Patient_DB):
-                yield Patient(patient.first_name, patient.last_name, patient.birth_date, patient.phone,
-                              patient.document_type, patient.document_id)
-        except:
-            raise
-            return
+        for patient in self.session.query(Patient_DB):
+            yield Patient(patient.first_name, patient.last_name, patient.birth_date, patient.phone,
+                          patient.document_type, patient.document_id)
 
     @logger_decorator_maker()
     def limit(self, limit_val):
-        try:
-            for patient in self.session.query(Patient_DB).limit(limit_val):
-                yield Patient(patient.first_name, patient.last_name, patient.birth_date, patient.phone,
-                              patient.document_type, patient.document_id)
-        except:
-            return
+        for patient in self.session.query(Patient_DB).limit(limit_val):
+            yield Patient(patient.first_name, patient.last_name, patient.birth_date, patient.phone,
+                          patient.document_type, patient.document_id)
