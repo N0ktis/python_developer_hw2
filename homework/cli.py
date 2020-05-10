@@ -1,5 +1,5 @@
 import click
-from homework.patient import Patient, PatientCollection, DEFAULT_PARAMS, Patient_DB
+from patient import Patient, PatientCollection, DEFAULT_PARAMS, Patient_DB
 
 
 @click.group()
@@ -17,8 +17,7 @@ def cli():
 def create(first_name, last_name, birth_date, phone, document_type, document_number):
     if None in (first_name, last_name, birth_date, phone, document_type, document_number):
         raise Exception
-    Patient.save(
-        Patient.create(first_name, last_name, birth_date, phone, ' '.join(document_type), ' '.join(document_number)))
+    Patient.create(first_name, last_name, birth_date, phone, ' '.join(document_type), ' '.join(document_number)).save()
     click.echo('Patient added')
 
 
@@ -26,7 +25,8 @@ def create(first_name, last_name, birth_date, phone, document_type, document_num
 @click.argument('limit_val', default=10, type=int)
 def show(limit_val):
     if limit_val >= 0:
-        for i in PatientCollection(*DEFAULT_PARAMS).limit(limit_val):
+        p = PatientCollection(*DEFAULT_PARAMS).limit(limit_val)
+        for i in p:
             click.echo(i)
 
 

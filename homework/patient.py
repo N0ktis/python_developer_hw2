@@ -1,7 +1,7 @@
 import datetime
 import logging
 from functools import wraps
-from homework.db_config import init_connection, Patient_DB, SQLAlchemyError, NoSuchTableError,DEFAULT_PARAMS
+from db_config import init_connection, Patient_DB, SQLAlchemyError, NoSuchTableError, DEFAULT_PARAMS
 
 logger_info = logging.getLogger("patient_log_info")
 logger_info.setLevel(logging.INFO)
@@ -30,6 +30,8 @@ def logger_decorator_maker(id=None):
     def logger_decorator(fun):
         @wraps(fun)
         def wrapper(value, *args):
+
+            global checked_value
             try:
                 checked_value = fun(value, *args)
             except ValueError as error:
@@ -43,8 +45,10 @@ def logger_decorator_maker(id=None):
                 raise AttributeError(error.args[0])
             except NoSuchTableError:
                 logger_error.error('The table does not exist or is not visible for the join.')
+                raise Exception('The table does not exist or is not visible for the join.')
             except SQLAlchemyError:
                 logger_error.error('Error while working with database')
+                raise Exception('Error while working with database')
             else:
                 if id == 'init':
                     logger_info.info("Patient added")

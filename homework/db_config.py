@@ -25,8 +25,9 @@ class Patient_DB(base):
 
 def init_connection(user, password, host, port):
     engine = create_engine("postgres://{0}:{1}@{2}:{3}/patients".format(user, password, host, port))
-    base.metadata.create_all(engine)
+    #base.metadata.create_all(engine)
     return sessionmaker(engine)()
+
 
 
 #Flask Web Development
