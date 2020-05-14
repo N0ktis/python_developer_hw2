@@ -31,7 +31,7 @@ def logger_decorator_maker(id=None):
         @wraps(fun)
         def wrapper(value, *args):
 
-            global checked_value
+            global checked_value  # не знаю нужно ли, если переменная создаётся внутри блока try, но на всякий случай написал
             try:
                 checked_value = fun(value, *args)
             except ValueError as error:
@@ -68,6 +68,8 @@ def logger_decorator_maker(id=None):
 
 @logger_decorator_maker()
 def name_check(name):
+    if not isinstance(name, str):
+        raise TypeError("Incorrect type of name or surname")
     if not name.isalpha():
         raise ValueError("Name or surname contains invalid characters")
     return name.capitalize()
@@ -75,11 +77,13 @@ def name_check(name):
 
 @logger_decorator_maker()
 def birth_check(born):
+    if not isinstance(born, str):
+        raise TypeError("Incorrect type of document birth date")
     if len(born) != 10:
         raise ValueError("Incorrect date length")
     born = born[:4] + '-' + born[5:7] + '-' + born[8:]
     for k, i in enumerate(born):
-        if i.isdigit() and (0 <= k <= 3 or k == 5 or k == 6 or k == 8 or k == 9):
+        if i.isdigit() and k not in (4,7):
             continue
         elif (k == 4 or k == 7) and i == '-':
             continue
@@ -93,6 +97,8 @@ def birth_check(born):
 
 @logger_decorator_maker()
 def phone_check(phone):
+    if not isinstance(phone, str):
+        raise TypeError("Incorrect type of phone")
     phone = phone.replace('+', '')
     phone = phone.replace('(', '')
     phone = phone.replace(')', '')
@@ -109,6 +115,8 @@ def phone_check(phone):
 
 @logger_decorator_maker()
 def doc_check(doc):
+    if not isinstance(doc, str):
+        raise TypeError("Incorrect type of document")
     if doc.lower() != PASSPORT and doc.lower() != INTERNATIONAL_PASS_1 and doc.lower() != INTERNATIONAL_PASS_2 and \
             doc.lower() != DRIVER_LICENSE_1 and doc.lower() != DRIVER_LICENSE_2:
         raise ValueError("Incorrect document")
@@ -117,6 +125,8 @@ def doc_check(doc):
 
 @logger_decorator_maker()
 def doc_id_check(doc_id):
+    if not isinstance(doc_id, str):
+        raise TypeError("Incorrect type of document id")
     doc_id = doc_id.replace(' ', '')
     doc_id = doc_id.replace('-', '')
     doc_id = doc_id.replace('/', '')
@@ -146,8 +156,6 @@ class DataAccess:
 
     @logger_decorator_maker()
     def __set__(self, obj, val):
-        if type(val) != str:
-            raise TypeError("Incorrect type of input data")
         self.data_set(obj, self.data_check(val), self.name)
 
     def __delete__(self, obj):
@@ -156,18 +164,7 @@ class DataAccess:
 
 class Patient:
     def get_field(self, key):
-        if key == 'first_name':
-            return self._first_name
-        elif key == 'last_name':
-            return self._last_name
-        elif key == 'birth_date':
-            return self._birth_date
-        elif key == 'phone':
-            return self._phone
-        elif key == 'document_type':
-            return self._document_type
-        elif key == 'document_id':
-            return self._document_id
+        return getattr(self, "_" + key)
 
     @logger_decorator_maker('patient_set')
     def set_field(self, value, key):
